@@ -19,28 +19,27 @@ def main(config):
     config.dev_datasets = config.target_datasets
     config.dev_tasks = config.target_tasks
 
-    source_tasks = [config.source_tasks, config.source_tasks + config.target_tasks, config.target_tasks]
+    if config.do_train:
+        source_tasks = [config.target_tasks, config.source_tasks, config.source_tasks + config.target_tasks]
 
-    for i, st in enumerate(source_tasks):
-        config.train_tasks = st
-        config.save_path_dir = config.log_and_model_dir + '/' + str(i)
+        for i, st in enumerate(source_tasks):
+            config.train_tasks = st
+            config.save_path_dir = config.log_and_model_dir + '/' + str(i)
 
-        if not os.path.exists(config.save_path_dir):
-            os.makedirs(config.save_path_dir)
+            if not os.path.exists(config.save_path_dir):
+                os.makedirs(config.save_path_dir)
 
-        set_seed(config.seed)
-        datasets = dict()
+            set_seed(config.seed)
+            datasets = dict()
 
-        # load datasets for training
-        datasets['train'] = load_datasets_split("train", config.train_tasks, config.train_datasets, config)
-        datasets['dev'] = load_datasets_split("dev", config.dev_tasks, config.dev_datasets, config)
+            # load datasets for training
+            datasets['train'] = load_datasets_split("train", config.train_tasks, config.train_datasets, config)
+            datasets['dev'] = load_datasets_split("dev", config.dev_tasks, config.dev_datasets, config)
 
-        # initialize algorithm
-        algorithm = initialize_algorithm(config, datasets)
+            # initialize algorithm
+            algorithm = initialize_algorithm(config, datasets)
 
-        best_val_metric = None
-
-        train(algorithm, datasets, config, best_val_metric)
+            train(algorithm, datasets, config)
 
     if config.do_finetune:
         assert (config.target_datasets and config.target_tasks), "Must specify target datasets and tasks to finetune"
@@ -84,29 +83,19 @@ def main(config):
 
     if config.do_eval:
         assert (config.target_datasets and config.target_tasks), "Must specify target datasets and tasks to finetune"
-        datasets = {}
-        # If coming from training/fine-tuning, 
-        #   this means we already have a save_dir_path from training/fine-tuning and a model saved there
-        config.save_path_dir = config.log_and_model_dir + '/ft'
-
-        # ensure user has specified a model to evaluate
-        assert (not (config.eval_last and config.eval_best)), "cannot evaluate both last and best models"
-        assert (config.eval_last or config.eval_best), "must evaluate at least one model"
-
-        # load datasets for evaluation
+        datasets = dict()
         datasets['test'] = load_datasets_split("test", config.eval_tasks, config.eval_datasets, config)
 
         # initialize algorithm
         algorithm = initialize_algorithm(config, datasets)
 
+        config.save_path_dir = config.log_and_model_dir + '/0'
         epoch, best_val_metric = load_algorithm(algorithm, config.save_path_dir + '/best_model.pt')
-        print('best_val_metric', best_val_metric, datasets)
-        config.save_path_dir = '/content/'
-        is_best = True
-        config.save_best = True
-        config.save_pred = True
+        evaluate(algorithm, datasets, config, epoch, is_baseline=True)
 
-        evaluate(algorithm, datasets, config, epoch)
+        config.save_path_dir = config.log_and_model_dir + '/ft'
+        epoch, best_val_metric = load_algorithm(algorithm, config.save_path_dir + '/best_model.pt')
+        evaluate(algorithm, datasets, config, epoch, is_baseline=False)
 
 
 if __name__ == "__main__":

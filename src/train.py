@@ -86,7 +86,7 @@ def run_epoch(algorithm, datasets, config, train):
                 r = {loss_names[t_d]: -total_loss[t_d] / loss_divisor[t_d]}
 
             results[t_d] = r
-            if debug:
+            if config.debug:
                 break
     return results, epoch_y_pred
 
@@ -119,7 +119,7 @@ def train(algorithm, datasets, config, best_val_metric=None):
     return best_val_metric
 
 
-def evaluate(algorithm, datasets, config, epoch):
+def evaluate(algorithm, datasets, config, epoch, is_baseline=False):
     algorithm.eval()
     torch.set_grad_enabled(False)
     for split in datasets:
@@ -176,5 +176,9 @@ def evaluate(algorithm, datasets, config, epoch):
             r['epoch'] = epoch
             result_str += r_str
 
-            save_pred(epoch_y_pred, os.path.join(config.save_path_dir, f"{split}-predictions"), epoch_instance_ids)
+            file_name = 'predictions'
+            if is_baseline:
+                file_name = 'baseline_predictions'
+            save_pred(epoch_y_pred, os.path.join(config.save_pred_dir, f"{'-'.join(config.target_tasks)}/{file_name}"),
+                      epoch_instance_ids)
 

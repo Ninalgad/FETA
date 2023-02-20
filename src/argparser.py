@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--cpu_only", action="store_true")
     parser.add_argument("--seed", type=int, default=-1)
     parser.add_argument("--log_and_model_dir", type=str, default="./logs_and_models")
+    parser.add_argument("--save_pred_dir", type=str, default="./predictions")
     parser.add_argument("--saved_model_dir", type=str, default=None,
                         help="To load a saved model for fine-tuning or evaluation")
     parser.add_argument("--data_dir", type=str, default=None,
@@ -53,8 +54,6 @@ def parse_args():
 
     # evaluation args
     parser.add_argument("--do_eval", action="store_true")
-    parser.add_argument("--eval_best", action="store_true")
-    parser.add_argument("--eval_last", action="store_true")
 
     # task args
     parser.add_argument("--source_tasks", type=str, nargs='+', required=True)
