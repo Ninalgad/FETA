@@ -135,8 +135,8 @@ def save_pred(y_pred, path_prefix, instance_ids):
                     if isinstance(pred, str):
                         pred = pred.replace(",", " ")
                     elif isinstance(pred, list):
-                        pred = "[SEPERATOR]".join(pred)
-                        pred = pred.replace(",", " ")
+                        pred = str([float(x) for x in pred])
+                        pred = pred.replace(",", "")
                     f.write(f"{id},{pred}\n")
         else:
             torch.save(y_pred, path_prefix + '.pt')

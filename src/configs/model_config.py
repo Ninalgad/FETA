@@ -4,23 +4,23 @@
 
 
 t5_config = {
-    "model": "google/flan-t5-xxl",
+    "model": "google/flan-t5-small",
     "optimizer": "Adam",
     "learning_rate": 1e-5,
     "fp16": False,
-    "max_dialogue_length": 512 # at most 512 words
+    "max_dialogue_length": 512  # at most 512 words
 }
 gpt2_config = {
     "model": "gpt2",
     "optimizer": "Adam",
     "learning_rate": 3e-5,
     "fp16": True,
-    "max_dialogue_length": 512 # at most 512 words
+    "max_dialogue_length": 512  # at most 512 words
 }
 bert_config = {
     "model": "bert-base-uncased",
     "optimizer": "Adam",
     "learning_rate": 3e-5,
     "fp16": True,
-    "max_dialogue_length": 0 # no maximum legnth
+    "max_dialogue_length": 0  # no maximum length
 }
