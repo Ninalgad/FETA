@@ -92,6 +92,7 @@ def main(config):
         config.save_path_dir = config.log_and_model_dir + '/ft'
         train(algorithm, datasets, config)
 
+        datasets = dict()
         datasets['test'] = load_datasets_split("test", config.eval_tasks, config.eval_datasets, config)
         algorithm = initialize_algorithm(config, datasets)
         # baseline
