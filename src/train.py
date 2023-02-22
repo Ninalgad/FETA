@@ -6,7 +6,7 @@ from utils import detach_and_clone, collate_list, concat_t_d, save_pred, save_al
 from tlidb.TLiDB.data_loaders.data_loaders import TLiDB_DataLoader
 
 
-def run_epoch(algorithm, datasets, config, train):
+def run_epoch(algorithm, datasets, config, epoch, train):
     """
     Run one epoch of training or validation.
     Args:
@@ -56,7 +56,8 @@ def run_epoch(algorithm, datasets, config, train):
         if loss_names[batch_t_d] is None:
             loss_names[batch_t_d] = batch_results['objective']['loss_name']
 
-        desc = "Train losses" if train else "Validation losses"
+        desc = f"Epoch: {epoch} | "
+        desc += "Train losses" if train else "Validation losses"
         for t_d in task_datasets:
             desc += f" | {t_d}: {total_loss[t_d] / loss_divisor[batch_t_d]:0.4f}"
 
@@ -101,14 +102,14 @@ def train(algorithm, datasets, config, best_val_metric=None):
 
     for epoch in range(n_epochs):
         # train
-        run_epoch(algorithm, datasets['train'], config, train=True)
+        run_epoch(algorithm, datasets['train'], config, epoch, train=True)
 
         # allow for training without dev set, will not save model
         if not datasets['dev'].get('datasets', None):
             continue
 
         # evaluate on validation set
-        val_results, y_pred = run_epoch(algorithm, datasets['dev'], config, train=False)
+        val_results, y_pred = run_epoch(algorithm, datasets['dev'], config, epoch, train=False)
         val_metrics = [val_results[d][m] for d in val_results for m in val_results[d]]
         cur_val_metric = sum(val_metrics) / len(val_metrics)
 

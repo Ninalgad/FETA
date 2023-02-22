@@ -48,8 +48,6 @@ def parse_args():
     parser.add_argument("-lr", "--learning_rate", type=float, default=3e-5)
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
-    parser.add_argument("--save_best", type=bool, default=True)
-    parser.add_argument("--save_last", type=bool, default=False)
     parser.add_argument("--imbalanced_task_weighting", type=bool, default=True)
 
     # evaluation args
@@ -62,7 +60,6 @@ def parse_args():
     parser.add_argument("--target_datasets", type=str, nargs='+')
 
     # TTiDB args
-    parser.add_argument("--multitask", action="store_true")
     parser.add_argument("--few_shot_percent", type=float, default=None)
 
     # algorithm args
@@ -72,8 +69,6 @@ def parse_args():
     # misc. args
     parser.add_argument("--progress_bar", type=bool, default=True)
     parser.add_argument("--save_pred", action="store_true", help="Save predictions for each task")
-    parser.add_argument("--resume", action="store_true", help="Resume training from checkpoint")
-
     args = parser.parse_args()
 
     # determine correct location to store datasets
