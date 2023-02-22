@@ -78,7 +78,12 @@ def main(config):
         # perform weight averaging
         dummy_algo = initialize_algorithm(config, datasets)
         weights = {name: [] for name, param in algorithm.model.named_parameters()}
-        for i in range(3):
+
+        pth = config.log_and_model_dir + '/0/best_model.pt'
+        load_algorithm(algorithm, pth)
+        for name, param in dummy_algo.model.named_parameters():
+            weights[name].append(param)
+        for i in range(1, 3):
             pth = config.log_and_model_dir + f'/ft-{i}/best_model.pt'
             load_algorithm(dummy_algo, pth)
             for name, param in dummy_algo.model.named_parameters():
