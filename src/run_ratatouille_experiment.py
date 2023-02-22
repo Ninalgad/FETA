@@ -52,14 +52,13 @@ def main(config):
         datasets['dev'] = load_datasets_split("dev", config.finetune_dev_tasks, config.finetune_dev_datasets, config)
 
         for i, st in enumerate(source_tasks):
-            if not os.path.exists(config.save_path_dir):
-                os.makedirs(config.save_path_dir)
-
             algorithm = initialize_algorithm(config, datasets)
             pth = config.log_and_model_dir + '/' + str(i) + '/best_model.pt'
             load_algorithm(algorithm, pth)
 
             config.save_path_dir = config.log_and_model_dir + f'/ft-{i}'
+            if not os.path.exists(config.save_path_dir):
+                os.makedirs(config.save_path_dir)
             train(algorithm, datasets, config)
 
     if config.do_eval:
@@ -95,6 +94,8 @@ def main(config):
         del weights, dummy_algo, w, param
 
         config.save_path_dir = config.log_and_model_dir + '/ft'
+        if not os.path.exists(config.save_path_dir):
+            os.makedirs(config.save_path_dir)
         train(algorithm, datasets, config)
 
         datasets = dict()
