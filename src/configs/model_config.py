@@ -20,7 +20,7 @@ gpt2_config = {
 bert_config = {
     "model": "bert-base-uncased",
     "optimizer": "Adam",
-    "learning_rate": 3e-5,
+    "learning_rate": 1e-5,
     "fp16": True,
     "max_dialogue_length": 0  # no maximum length
 }

@@ -1,4 +1,4 @@
-from tlidb.examples.utils import move_to
+from utils import move_to
 from .algorithm import Algorithm
 
 class EncoderDecoderAlgorithm(Algorithm):

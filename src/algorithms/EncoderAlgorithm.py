@@ -1,5 +1,5 @@
-from tlidb.examples.utils import move_to
-from tlidb.examples.losses import initialize_loss
+from utils import move_to
+from losses import initialize_loss
 from .algorithm import Algorithm
 import torch
 

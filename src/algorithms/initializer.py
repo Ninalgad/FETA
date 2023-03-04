@@ -1,6 +1,6 @@
-from tlidb.examples.algorithms.EncoderAlgorithm import EncoderAlgorithm
-from tlidb.examples.algorithms.EncoderDecoderAlgorithm import EncoderDecoderAlgorithm
-from tlidb.examples.algorithms.DecoderAlgorithm import DecoderAlgorithm
+from algorithms.EncoderAlgorithm import EncoderAlgorithm
+from algorithms.EncoderDecoderAlgorithm import EncoderDecoderAlgorithm
+from algorithms.DecoderAlgorithm import DecoderAlgorithm
 
 def initialize_algorithm(config, datasets):
     """Load an algorithm of type Algorithm
