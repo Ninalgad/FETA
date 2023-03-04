@@ -67,14 +67,7 @@ class TLiDB_model:
             layer.train(mode)
 
     def init_weights(self):
-        for layer_name, layer in self.layers.items():
-            # main model is always Transformers-based and does it's own init
-            if layer_name == "model":
-                pass
-            elif isinstance(layer, torch.nn.Module):
-                torch.nn.init.xavier_uniform_(layer.weight)
-            else:
-                raise ValueError("Layer {} is not a torch.nn.Module or Transformers Model".format(layer_name))
+        pass
 
     @property
     def forward(self):
