@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-from tlidb.examples.utils import move_to, detach_and_clone
-from tlidb.examples.optimizers import initialize_optimizer
-from tlidb.examples.models.initializer import initialize_model
+from utils import move_to, detach_and_clone
+from optimizers import initialize_optimizer
+from models.initializer import initialize_model
 
 class Algorithm(nn.Module):
     def __init__(self, config, datasets):
