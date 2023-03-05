@@ -1,98 +1,137 @@
-from itertools import chain
+import torch
+import torch.nn as nn
+
+from utils import move_to, detach_and_clone
+from optimizers import initialize_optimizer
+from models.initializer import initialize_model
 
 
-class TLiDB_model:
-    def __init__(self, config):
-        self.config = config
+class Algorithm(nn.Module):
+    def __init__(self, config, datasets):
+        super().__init__()
+        self.model = initialize_model(config, datasets)
+        self.model.to(config.device)
+        self.device = config.device
+        self.out_device = 'cpu'
+        self.optimizer = initialize_optimizer(config, self.model)
+        self.max_grad_norm = config.max_grad_norm
+        self.gradient_accumulation_steps = max(config.effective_batch_size//config.gpu_batch_size,1)
+        self.imbalanced_task_weighting = config.imbalanced_task_weighting
+        if not (config.device == 'cpu') and config.fp16:
+            self.fp16 = config.fp16
+            self.scaler = torch.cuda.amp.GradScaler()
+        else:
+            self.fp16 = False
+        if config.pipeline_parallel:
+            self.model.parallelize()
+
+    def process_batch(self, batch):
+        raise NotImplementedError
 
     @property
-    def model(self):
-        """
-        Base model underlying the encoding/decoding
-        model is of type transformers.PreTrainedModel
-        """
-        return self._model
-
-    @model.setter
-    def model(self, model):
-        self._model = model
-
-    @property
-    def layers(self):
-        return self._layers
-
-    @layers.setter
-    def layers(self, layers):
-        self._layers = layers
-
-    @layers.getter
-    def layers(self):
-        return self._layers
-
-    def parameters(self):
-        """Convenience function to gather all model parameters
-            to be passed to a torch.optim optimizer"""
-        params = []
-        for layer_name, layer in self.layers.items():
-            params.extend(layer.parameters())
-
-        return params
-
-    def named_parameters(self):
-        """Convenience function to gather all named model parameters
-            to be passed to a torch.optim optimizer"""
-        named_params = chain()
-        for layer_name, layer in self.layers.items():
-            named_params = chain(named_params, layer.named_parameters())
-        return named_params
+    def requires_metric_calculation(self):
+        """Whether to calculate metrics"""
+        return NotImplementedError
 
     def state_dict(self):
-        state_dict = {}
-        for layer_name, layer in self.layers.items():
-            state_dict[layer_name] = layer.state_dict()
-        return state_dict
+        return self.model.state_dict()
 
     def load_state_dict(self, state_dict):
-        """Convenience function to load state dict for all layers"""
-        return NotImplementedError
+        """
+        Load the state dict of the model
+        """
+        self.model.load_state_dict(state_dict)
 
-    def zero_grad(self, set_to_none=True):
-        """Convenience function to zero gradients for all layers"""
-        for layer_name, layer in self.layers.items():
-            layer.zero_grad(set_to_none=set_to_none)
+    def update(self, batch, step):
+        """
+        Process the batch, and update the model
+        Args:
+            - batch: a batch of data yielded by data loaders
+        Output:
+            - results (dict): information about the batch, such as:
+                - y_pred: the predicted labels
+                - y_true: the true labels
+                - metadata: the metadata of the batch
+                - loss: the loss of the batch
+                - metrics: the metrics of the batch
+        """
+        assert self.is_training, "Cannot update() when not in training mode"
+
+        if self.fp16:
+            with torch.cuda.amp.autocast():
+                results, objective = self.process_batch(batch)
+                if self.imbalanced_task_weighting:
+                    task_weight = torch.tensor(batch[2]['task_weight']).to(self.device)
+                    objective = task_weight * objective
+                objective = objective / self.gradient_accumulation_steps
+            self.scaler.scale(objective).backward()
+            if ((step+1)%self.gradient_accumulation_steps) == 0:
+                self.scaler.unscale_(self.optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.model.zero_grad(set_to_none=True)
+        else:
+            results, objective = self.process_batch(batch)
+            if self.imbalanced_task_weighting:
+                task_weight = torch.tensor(batch[2]['task_weight']).to(self.device)
+                objective = task_weight * objective
+            objective = objective / self.gradient_accumulation_steps
+            objective.backward()
+            if ((step+1)%self.gradient_accumulation_steps) == 0:
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                self.optimizer.step()
+                self.model.zero_grad(set_to_none=True)
+
+        return self.sanitize_dict(results)
+
+    def evaluate(self, batch):
+        """
+        Process the batch, and evaluate the model
+        Args:
+            - batch: a batch of data yielded by data loaders
+        Output:
+            - results (dict): information about the batch, such as:
+                - y_pred: the predicted labels
+                - y_true: the true labels
+                - metadata: the metadata of the batch
+                - loss: the loss of the batch
+                - metrics: the metrics of the batch
+        """
+        assert not self.is_training, "Cannot evaluate() when in training mode"
+        with torch.no_grad():
+            results, _ = self.process_batch(batch)
+        return self.sanitize_dict(results)
 
     def train(self, mode=True):
-        """Convenience function to set all layers to train mode"""
-        for layer_name, layer in self.layers.items():
-            layer.train(mode)
+        """
+        Set the model to training mode
+        """
+        self.is_training = mode
+        super().train(mode)
 
-    def init_weights(self):
-        pass
+    def eval(self):
+        """
+        Set the model to evaluation mode
+        """
+        self.train(False)
 
-    @property
-    def forward(self):
-        return NotImplementedError
+    def sanitize_dict(self, in_dict, to_out_device=True):
+        """
+        Helper function that sanitizes dictionaries by:
+            - moving to the specified output device
+            - removing any gradient information
+            - detaching and cloning the tensors
+        Args:
+            - in_dict (dictionary)
+        Output:
+            - out_dict (dictionary): sanitized version of in_dict
+        """
+        out_dict = detach_and_clone(in_dict)
+        if to_out_device:
+            out_dict = move_to(out_dict, self.out_device)
+        return out_dict
 
-    @forward.setter
-    def forward(self, forward):
-        self._forward = forward
+    def convert_strings_to_labels(self, labels, strings):
+        return torch.tensor([labels.index(s) if s in labels else -1 for s in strings])
 
-    def __call__(self, *args, **kwargs):
-        return self._forward(*args, **kwargs)
-
-    def transform_inputs(self, inputs):
-        return NotImplementedError
-
-    def transform_outputs(self, outputs):
-        return NotImplementedError
-
-    def to(self, device):
-        """Convenience function to move all layers to a device"""
-        for layer_name, layer in self.layers.items():
-            layer.to(device)
-
-    def parallelize(self):
-        if self.model.is_parallelizable:
-            self.model.parallelize()
-        else:
-            raise TypeError("Model is not parallelizable")

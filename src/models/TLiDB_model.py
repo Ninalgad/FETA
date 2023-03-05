@@ -1,4 +1,3 @@
-import torch
 from itertools import chain
 
 class TLiDB_model:
@@ -12,7 +11,7 @@ class TLiDB_model:
         model is of type transformers.PreTrainedModel
         """
         return self._model
-    
+
     @model.setter
     def model(self, model):
         self._model = model
