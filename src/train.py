@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import torch
-from utils import detach_and_clone, collate_list, concat_t_d, save_pred, save_algorithm
+from utils import detach_and_clone, collate_list, concat_t_d, save_pred, save_algorithm, save_results
 from tlidb.TLiDB.data_loaders.data_loaders import TLiDB_DataLoader
 
 
@@ -176,6 +176,7 @@ def evaluate(algorithm, datasets, config, epoch, is_baseline=False):
             r, r_str = metric.compute(epoch_y_pred, epoch_y_true)
             r['epoch'] = epoch
             result_str += r_str
+            print(result_str)
 
             file_name = 'predictions'
             if is_baseline:
@@ -183,3 +184,5 @@ def evaluate(algorithm, datasets, config, epoch, is_baseline=False):
             save_pred(epoch_y_pred, os.path.join(config.save_pred_dir, f"{'-'.join(config.target_tasks)}/{file_name}"),
                       epoch_instance_ids)
 
+            res_file = config.log_and_model_dir + '/results.pkl'
+            save_results(res_file, dataset.task, result_str)

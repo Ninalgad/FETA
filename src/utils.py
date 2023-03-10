@@ -2,11 +2,22 @@ import os
 import random
 import numpy as np
 import torch
+import pickle
 
 from tlidb.TLiDB.datasets.get_dataset import get_dataset
 from tlidb.TLiDB.data_loaders.data_loaders import get_dataloader
 from tlidb.TLiDB.metrics.initializer import get_metric_computer
 
+
+def save_results(res_file, task, result_str):
+    if os.path.isfile(res_file):
+        with open(res_file, 'rb') as f:
+            res_data = pickle.load(f)
+        res_data[task] = result_str
+    else:
+        res_data = {task: result_str}
+    with open(res_file, 'wb') as f:
+        pickle.dump(res_data, f)
 
 def load_datasets_split(split, tasks, datasets, config):
     split_datasets = {"datasets": [], "loaders": [], "metrics": []}

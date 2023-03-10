@@ -6,7 +6,6 @@ from argparser import parse_args
 
 
 def main(config):
-
     if config.debug:
         config.gpu_batch_size = 1
         config.effective_batch_size = 1
@@ -20,7 +19,10 @@ def main(config):
     config.dev_datasets = config.target_datasets
     config.dev_tasks = config.target_tasks
 
-    source_tasks = [config.target_tasks, config.source_tasks, config.source_tasks + config.target_tasks]
+    source_tasks = [config.target_tasks, config.source_tasks + config.target_tasks]
+    if len(config.source_tasks) > 1:
+        source_tasks += [[s] + config.target_tasks for s in config.source_tasks]
+    print('source_tasks', source_tasks)
 
     if config.do_train:
         for i, st in enumerate(source_tasks):
@@ -41,7 +43,6 @@ def main(config):
 
     if config.do_finetune:
         assert (config.target_datasets and config.target_tasks), "Must specify target datasets and tasks to finetune"
-        config.learning_rate *= 10.
         datasets = {}
 
         config.finetune_train_tasks = config.finetune_tasks
@@ -84,7 +85,7 @@ def main(config):
         load_algorithm(algorithm, pth)
         for name, param in dummy_algo.model.named_parameters():
             weights[name].append(param)
-        for i in range(1, 3):
+        for i in range(1, len(source_tasks)):
             pth = config.log_and_model_dir + f'/ft-{i}/best_model.pt'
             load_algorithm(dummy_algo, pth)
             for name, param in dummy_algo.model.named_parameters():
