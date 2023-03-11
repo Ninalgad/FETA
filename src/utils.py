@@ -9,13 +9,13 @@ from tlidb.TLiDB.data_loaders.data_loaders import get_dataloader
 from tlidb.TLiDB.metrics.initializer import get_metric_computer
 
 
-def save_results(res_file, task, result_str):
+def save_results(res_file, task, result_data):
     if os.path.isfile(res_file):
         with open(res_file, 'rb') as f:
             res_data = pickle.load(f)
-        res_data[task] = result_str
+        res_data[task] = result_data
     else:
-        res_data = {task: result_str}
+        res_data = {task: result_data}
     with open(res_file, 'wb') as f:
         pickle.dump(res_data, f)
 

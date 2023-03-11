@@ -185,4 +185,5 @@ def evaluate(algorithm, datasets, config, epoch, is_baseline=False):
                       epoch_instance_ids)
 
             res_file = config.log_and_model_dir + '/results.pkl'
-            save_results(res_file, dataset.task, result_str)
+            r['is_baseline'] = is_baseline
+            save_results(res_file, dataset.task, r)
